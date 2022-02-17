@@ -236,10 +236,9 @@ func (m *OuiDb) LoadBuffer(scanner *bufio.Scanner) error {
 		// fmt.Printf("BLA %v %v ALB", m.hw, m.mask)
 	}
 
-	// not necessary since returning err anyways
-	//if err := scanner.Err(); err != nil {
-	//	return (err)
-	//}
+	if err := scanner.Err(); err != nil {
+		return err
+	}
 
 	return err
 }
