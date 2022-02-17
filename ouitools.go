@@ -4,17 +4,17 @@ package ouidb
 import (
 	"bufio"
 	"bytes"
+	"compress/bzip2"
 	_ "embed"
 	"errors"
 	"net"
 	"os"
 	"regexp"
 	"strconv"
-	"strings"
 )
 
-//go:embed oui.txt
-var ouifile string
+//go:embed oui.txt.bz2
+var ouifile []byte
 
 // https://code.wireshark.org/review/gitweb?p=wireshark.git;a=blob_plain;f=manuf
 // Bigger than we need, not too big to worry about overflow
@@ -130,7 +130,8 @@ type OuiDb struct {
 func New(file string) *OuiDb {
 	db := &OuiDb{}
 	if file == "" {
-		if err := db.LoadBuffer(bufio.NewScanner(strings.NewReader(ouifile))); err != nil {
+		reader := bzip2.NewReader(bytes.NewReader(ouifile))
+		if err := db.LoadBuffer(bufio.NewScanner(reader)); err != nil {
 			return nil
 		}
 	} else {
