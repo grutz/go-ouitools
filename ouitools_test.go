@@ -42,6 +42,13 @@ func TestInvalidDBFile(t *testing.T) {
 	}
 }
 
+func TestEmbedDBFile(t *testing.T) {
+	db := New("")
+	if db == nil {
+		t.Fatal("can't load embed database file")
+	}
+}
+
 func TestLookup1(t *testing.T) {
 	lookup(t, "60:03:08:a0:ec:a6", "Apple, Inc.")
 }

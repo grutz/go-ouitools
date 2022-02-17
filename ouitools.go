@@ -4,12 +4,17 @@ package ouidb
 import (
 	"bufio"
 	"bytes"
+	_ "embed"
 	"errors"
 	"net"
 	"os"
 	"regexp"
 	"strconv"
+	"strings"
 )
+
+//go:embed oui.txt
+var ouifile string
 
 // https://code.wireshark.org/review/gitweb?p=wireshark.git;a=blob_plain;f=manuf
 // Bigger than we need, not too big to worry about overflow
@@ -124,8 +129,14 @@ type OuiDb struct {
 // New returns a new OUI database loaded from the specified file.
 func New(file string) *OuiDb {
 	db := &OuiDb{}
-	if err := db.Load(file); err != nil {
-		return nil
+	if file == "" {
+		if err := db.LoadBuffer(bufio.NewScanner(strings.NewReader(ouifile))); err != nil {
+			return nil
+		}
+	} else {
+		if err := db.Load(file); err != nil {
+			return nil
+		}
 	}
 	return db
 }
@@ -166,14 +177,17 @@ func byteIndex(s string, c byte) int {
 func (m *OuiDb) Load(path string) error {
 	file, err := os.Open(path)
 	if err != nil {
-		return (err)
+		return err
 	}
+	return m.LoadBuffer(bufio.NewScanner(file))
+}
 
+func (m *OuiDb) LoadBuffer(scanner *bufio.Scanner) error {
+	var err error = nil
 	fieldsRe := regexp.MustCompile(`^(\S+)\t+(\S+)(\s+#\s+(\S.*))?`)
 
 	re := regexp.MustCompile(`((?:(?:[0-9a-zA-Z]{2})[-:]){2,5}(?:[0-9a-zA-Z]{2}))(?:/(\w{1,2}))?`)
 
-	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		text := scanner.Text()
 		if text == "" || text[0] == '#' || text[0] == '\t' {
@@ -222,11 +236,12 @@ func (m *OuiDb) Load(path string) error {
 		// fmt.Printf("BLA %v %v ALB", m.hw, m.mask)
 	}
 
-	if err := scanner.Err(); err != nil {
-		return (err)
-	}
+	// not necessary since returning err anyways
+	//if err := scanner.Err(); err != nil {
+	//	return (err)
+	//}
 
-	return (nil)
+	return err
 }
 
 func CIDRMask(ones, bits int) []byte {
